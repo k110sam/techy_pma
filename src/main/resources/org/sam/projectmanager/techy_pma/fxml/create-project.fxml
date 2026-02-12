@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="org.sam.projectmanager.techy_pma.controllers.CreateProjectController"
+            stylesheets="@../css/dashboard.css"
+            prefWidth="1100.0" prefHeight="700.0">
+
+    <!-- SIDEBAR (same as dashboard) -->
+    <left>
+        <VBox styleClass="sidebar" prefWidth="260.0" spacing="0">
+
+            <!-- App Branding -->
+            <VBox styleClass="sidebar-brand" spacing="4">
+                <Label text="⬡ TECHY" styleClass="brand-logo"/>
+                <Label text="PROJECT MANAGER" styleClass="brand-sub"/>
+            </VBox>
+
+            <!-- User Profile Block -->
+            <VBox styleClass="user-profile-block" spacing="6">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <StackPane styleClass="avatar-circle">
+                        <Label fx:id="avatarLabel" text="J" styleClass="avatar-letter"/>
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label fx:id="sidebarUsername" text="username" styleClass="profile-name"/>
+                        <Label fx:id="sidebarEmail" text="email" styleClass="profile-email"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <Separator styleClass="sidebar-divider"/>
+
+            <!-- Navigation -->
+            <VBox styleClass="nav-section" spacing="4" VBox.vgrow="ALWAYS">
+                <Label text="NAVIGATION" styleClass="nav-section-label"/>
+                <Button text="  ⊞  Dashboard" onAction="#handleNavDashboard"
+                        styleClass="nav-button" maxWidth="Infinity"/>
+                <Button text="  ◈  My Projects" onAction="#handleNavMyProjects"
+                        styleClass="nav-button" maxWidth="Infinity"/>
+                <Button text="  ⊕  Browse Projects" onAction="#handleNavBrowse"
+                        styleClass="nav-button" maxWidth="Infinity"/>
+                <Button text="  ✦  Create Project" onAction="#handleCreateProject"
+                        styleClass="nav-button, nav-active, nav-create" maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Logout -->
+            <VBox styleClass="sidebar-footer" spacing="8">
+                <Separator styleClass="sidebar-divider"/>
+                <Button text="  ⊗  Logout" onAction="#handleLogout"
+                        styleClass="nav-button, nav-logout" maxWidth="Infinity"/>
+            </VBox>
+
+        </VBox>
+    </left>
+
+    <!-- MAIN CONTENT -->
+    <center>
+        <VBox styleClass="main-content" spacing="0">
+
+            <!-- Top Bar -->
+            <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="16">
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="Create New Project" styleClass="topbar-title"/>
+                    <Label text="Fill in the details below to start a new project." styleClass="topbar-sub"/>
+                </VBox>
+                <Button text="← Back to Dashboard" onAction="#handleNavDashboard"
+                        styleClass="action-button, action-tertiary"/>
+            </HBox>
+
+            <!-- Scrollable Content -->
+            <ScrollPane fitToWidth="true" styleClass="content-scroll" VBox.vgrow="ALWAYS">
+                <VBox spacing="24" styleClass="content-inner" maxWidth="700.0">
+
+                    <!-- Form Card -->
+                    <VBox styleClass="project-card" spacing="24">
+
+                        <Label text="PROJECT DETAILS" styleClass="section-title"/>
+
+                        <!-- Project Name -->
+                        <VBox spacing="8">
+                            <Label text="Project Name *" styleClass="form-label"/>
+                            <TextField fx:id="projectNameField"
+                                       promptText="Enter a clear and descriptive project name"
+                                       styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Project Description -->
+                        <VBox spacing="8">
+                            <Label text="Description" styleClass="form-label"/>
+                            <TextArea fx:id="projectDescriptionField"
+                                      promptText="Describe your project goals, scope and deliverables..."
+                                      styleClass="form-field, form-textarea"
+                                      prefRowCount="4" wrapText="true"/>
+                        </VBox>
+
+                        <!-- Status -->
+                        <VBox spacing="8">
+                            <Label text="Initial Status *" styleClass="form-label"/>
+                            <ComboBox fx:id="statusComboBox"
+                                      promptText="Select initial status"
+                                      styleClass="form-combo"
+                                      maxWidth="Infinity"/>
+                        </VBox>
+
+                        <!-- Initial Progress -->
+                        <VBox spacing="8">
+                            <HBox alignment="CENTER_LEFT" spacing="12">
+                                <Label text="Initial Progress" styleClass="form-label"
+                                       HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="progressValueLabel" text="0%"
+                                       styleClass="stat-number" style="-fx-font-size: 18px;"/>
+                            </HBox>
+                            <Slider fx:id="progressSlider" min="0" max="100" value="0"
+                                    styleClass="form-slider" blockIncrement="5"/>
+                            <HBox>
+                                <Label text="0%" styleClass="project-progress-text"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label text="100%" styleClass="project-progress-text"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Message Label -->
+                        <Label fx:id="messageLabel" visible="false" wrapText="true"
+                               styleClass="error-label"/>
+
+                        <!-- Buttons -->
+                        <HBox spacing="12" alignment="CENTER_RIGHT">
+                            <Button text="Cancel" onAction="#handleNavDashboard"
+                                    styleClass="action-button, action-tertiary"
+                                    prefWidth="120"/>
+                            <Button fx:id="createButton" text="✦  Create Project"
+                                    onAction="#handleCreateProject"
+                                    styleClass="action-button, action-primary"
+                                    prefWidth="180"/>
+                        </HBox>
+
+                    </VBox>
+
+                </VBox>
+            </ScrollPane>
+
+        </VBox>
+    </center>
+
+</BorderPane>
