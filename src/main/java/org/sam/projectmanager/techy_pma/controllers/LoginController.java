@@ -13,49 +13,88 @@ import org.sam.projectmanager.techy_pma.Main;
 import java.io.IOException;
 
 /**
- * Controller for the login screen
+ * Controller responsible for managing the Login screen.
+ *
+ * <p>This controller handles:
+ * <ul>
+ *     <li>User input validation</li>
+ *     <li>Authentication using {@link UserDAO}</li>
+ *     <li>Password verification via {@link PasswordUtil}</li>
+ *     <li>Session initialization using {@link Session}</li>
+ *     <li>Navigation to Dashboard and Signup screens</li>
+ * </ul>
+ *
+ * <p>It follows the MVC pattern where:
+ * <ul>
+ *     <li>The View is defined in the login FXML file</li>
+ *     <li>This class acts as the Controller</li>
+ *     <li>User data is represented by the {@link User} model</li>
+ * </ul>
  */
 public class LoginController {
 
+    /** Text field for entering the username */
     @FXML
     private TextField usernameField;
 
+    /** Password field for entering the user's password */
     @FXML
     private PasswordField passwordField;
 
+    /** Label used to display error, success, or informational messages */
     @FXML
     private Label errorLabel;
 
+    /** Button that triggers the login process */
     @FXML
     private Button loginButton;
 
+    /** Hyperlink that redirects users to the signup screen */
     @FXML
     private Hyperlink signupLink;
 
     /**
-     * Initialize method (called automatically by JavaFX)
+     * Initializes the controller.
+     *
+     * <p>This method is automatically called by JavaFX after
+     * the FXML components have been loaded and injected.
+     *
+     * <p>It sets up an event listener so that pressing the
+     * "Enter" key inside the password field triggers login.
      */
     @FXML
     public void initialize() {
-        // Add enter key listener to password field
         passwordField.setOnAction(event -> handleLogin());
     }
 
     /**
-     * Handle login button click
+     * Handles the login button click event.
+     *
+     * <p>Performs the following steps:
+     * <ol>
+     *     <li>Retrieves user input from text fields</li>
+     *     <li>Validates that fields are not empty</li>
+     *     <li>Fetches user record from database</li>
+     *     <li>Verifies password against stored hash</li>
+     *     <li>Creates session if authentication succeeds</li>
+     *     <li>Loads the dashboard screen</li>
+     * </ol>
+     *
+     * <p>If authentication fails, an appropriate error
+     * message is displayed to the user.
      */
     @FXML
     private void handleLogin() {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
-        // Validate input
+        // Validate input fields
         if (username.isEmpty() || password.isEmpty()) {
             showError("Please enter both username and password");
             return;
         }
 
-        // Get user from database
+        // Retrieve user from database
         User user = UserDAO.getUserByUsername(username);
 
         // Check if user exists
@@ -64,15 +103,16 @@ public class LoginController {
             return;
         }
 
-        // Verify password
+        // Verify entered password against stored password hash
         if (PasswordUtil.verifyPassword(password, user.getPassword())) {
-            // Login successful!
+
+            // Store authenticated user in session
             Session.setCurrentUser(user);
 
-            // Hide error
+            // Clear any previous error message
             hideError();
 
-            // Navigate to dashboard
+            // Navigate to dashboard screen
             try {
                 FXMLLoader fxmlLoader = new FXMLLoader(
                         Main.class.getResource("/org/sam/projectmanager/techy_pma/fxml/dashboard.fxml")
@@ -85,19 +125,25 @@ public class LoginController {
                 e.printStackTrace();
                 showError("Error loading dashboard");
             }
+
         } else {
-            // Wrong password
+            // Password does not match
             showError("Incorrect password");
         }
     }
 
     /**
-     * Handle signup link click
+     * Handles click event on the signup hyperlink.
+     *
+     * <p>Loads the signup screen and replaces the current scene.
+     * Displays an error message if loading fails.
      */
     @FXML
     private void handleSignupLink() {
         try {
-            FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("/org/sam/projectmanager/techy_pma/fxml/signup.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                    Main.class.getResource("/org/sam/projectmanager/techy_pma/fxml/signup.fxml")
+            );
             Scene scene = new Scene(fxmlLoader.load(), 600, 600);
 
             Stage stage = (Stage) signupLink.getScene().getWindow();
@@ -111,7 +157,9 @@ public class LoginController {
     }
 
     /**
-     * Show error message
+     * Displays an error message in the error label.
+     *
+     * @param message The error message to display
      */
     private void showError(String message) {
         errorLabel.setText("❌ " + message);
@@ -120,7 +168,9 @@ public class LoginController {
     }
 
     /**
-     * Show success message
+     * Displays a success message in the error label.
+     *
+     * @param message The success message to display
      */
     private void showSuccess(String message) {
         errorLabel.setText("✓ " + message);
@@ -129,7 +179,9 @@ public class LoginController {
     }
 
     /**
-     * Show info message
+     * Displays an informational message in the error label.
+     *
+     * @param message The informational message to display
      */
     private void showInfo(String message) {
         errorLabel.setText("ℹ " + message);
@@ -138,7 +190,7 @@ public class LoginController {
     }
 
     /**
-     * Hide error message
+     * Hides the error label from view.
      */
     private void hideError() {
         errorLabel.setVisible(false);

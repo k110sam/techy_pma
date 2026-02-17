@@ -21,31 +21,42 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Controller for the Dashboard screen
+ * Controller for the Dashboard screen.
+ *
+ * <p>The main landing screen after login. Displays a personalised greeting,
+ * project stat cards, quick action buttons, and a list of the user's current
+ * projects as dynamically generated cards.</p>
+ *
+ * Bound to: {@code dashboard.fxml}
  */
 public class DashboardController {
 
     // ─── TOP BAR ───
-    @FXML private Label welcomeLabel;
-    @FXML private Label dateLabel;
+    @FXML private Label welcomeLabel;  // Personalised greeting e.g. "Good Morning, alice!"
+    @FXML private Label dateLabel;     // Current date shown in top bar e.g. "Feb 17, 2026"
 
     // ─── SIDEBAR ───
-    @FXML private Label avatarLabel;
-    @FXML private Label sidebarUsername;
-    @FXML private Label sidebarEmail;
+    @FXML private Label avatarLabel;      // First letter of username shown in the avatar circle
+    @FXML private Label sidebarUsername;  // Logged-in user's username
+    @FXML private Label sidebarEmail;     // Logged-in user's email
 
     // ─── STAT CARDS ───
-    @FXML private Label myProjectsCount;
-    @FXML private Label createdCount;
-    @FXML private Label availableCount;
+    @FXML private Label myProjectsCount;  // Count of projects the user is a member of
+    @FXML private Label createdCount;     // Count of projects the user created
+    @FXML private Label availableCount;   // Count of all projects in the system
 
     // ─── PROJECTS ───
-    @FXML private Label projectCountLabel;
-    @FXML private VBox projectsContainer;
-    @FXML private VBox emptyState;
+    @FXML private Label projectCountLabel;  // Shows "X project(s)" above the project list
+    @FXML private VBox projectsContainer;   // Dynamically populated with project cards
+    @FXML private VBox emptyState;          // Shown when the user has no projects yet
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // INITIALIZATION
+    // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Called automatically by JavaFX when the FXML is loaded
+     * Called automatically by JavaFX once all @FXML fields are injected.
+     * Populates the sidebar, top bar greeting and date, stat cards, and project list.
      */
     @FXML
     public void initialize() {
@@ -55,15 +66,21 @@ public class DashboardController {
         setDate();
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // SETUP HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
     /**
-     * Load current user info into sidebar and top bar
+     * Loads the current user's info from the active {@link Session} and populates
+     * the top bar greeting, sidebar username, email, and avatar letter.
+     * Uses {@link #getGreeting()} to determine the time-appropriate greeting.
      */
     private void loadUserInfo() {
         User currentUser = Session.getCurrentUser();
         if (currentUser == null) return;
 
         // Top bar greeting
-        String hour = String.valueOf(LocalDateTime.now().getHour());
+        String hour = String.valueOf(LocalDateTime.now().getHour()); // reserved for future greeting customisation
         String greeting = getGreeting();
         welcomeLabel.setText(greeting + ", " + currentUser.getUsername() + "!");
 
@@ -78,7 +95,8 @@ public class DashboardController {
     }
 
     /**
-     * Get greeting based on time of day
+     * Returns a time-appropriate greeting string based on the current hour.
+     * Morning: before 12:00 | Afternoon: 12:00–16:59 | Evening: 17:00+
      */
     private String getGreeting() {
         int hour = LocalDateTime.now().getHour();
@@ -88,7 +106,8 @@ public class DashboardController {
     }
 
     /**
-     * Set the current date in the top bar
+     * Formats today's date and sets it in the top bar date label.
+     * Format: {@code MMM dd, yyyy} e.g. "Feb 17, 2026"
      */
     private void setDate() {
         String date = LocalDateTime.now().format(
@@ -98,7 +117,8 @@ public class DashboardController {
     }
 
     /**
-     * Load stat card numbers
+     * Fetches project counts from the database and populates the three stat cards.
+     * Each stat is fetched independently to keep counts accurate and separate.
      */
     private void loadStats() {
         User currentUser = Session.getCurrentUser();
@@ -110,17 +130,23 @@ public class DashboardController {
         List<Project> myProjects = ProjectDAO.getProjectsByUser(userId);
         myProjectsCount.setText(String.valueOf(myProjects.size()));
 
-        // Created count (projects user created)
+        // Created count (projects user originally created)
         List<Project> createdProjects = ProjectDAO.getProjectsCreatedByUser(userId);
         createdCount.setText(String.valueOf(createdProjects.size()));
 
-        // Available count (all projects)
+        // Available count (all projects in the system)
         List<Project> allProjects = ProjectDAO.getAllProjects();
         availableCount.setText(String.valueOf(allProjects.size()));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // PROJECT LIST
+    // ─────────────────────────────────────────────────────────────────────────
+
     /**
-     * Load the current user's projects into the projects container
+     * Fetches the current user's projects and renders them as cards in {@link #projectsContainer}.
+     * Shows the {@link #emptyState} panel if the user has no projects yet.
+     * Clears existing cards before re-rendering to prevent duplicates on refresh.
      */
     private void loadMyProjects() {
         User currentUser = Session.getCurrentUser();
@@ -131,7 +157,7 @@ public class DashboardController {
         // Get projects user is a member of
         List<Project> myProjects = ProjectDAO.getProjectsByUser(userId);
 
-        // Clear existing cards
+        // Clear existing cards before re-populating
         projectsContainer.getChildren().clear();
 
         if (myProjects.isEmpty()) {
@@ -154,7 +180,19 @@ public class DashboardController {
     }
 
     /**
-     * Create a project card UI element dynamically
+     * Dynamically builds a project card for the dashboard project list.
+     *
+     * <p>Each card contains:</p>
+     * <ul>
+     *   <li>Project name + status badge + user's role badge</li>
+     *   <li>Owner username</li>
+     *   <li>Description (truncated to 120 characters)</li>
+     *   <li>Progress bar with percentage</li>
+     *   <li>View Details button</li>
+     * </ul>
+     *
+     * @param project The project to build the card for
+     * @return A styled VBox card ready to be added to {@link #projectsContainer}
      */
     private VBox createProjectCard(Project project) {
         // ─── CARD CONTAINER ───
@@ -173,7 +211,7 @@ public class DashboardController {
         Label statusBadge = new Label(project.getStatus().toUpperCase());
         statusBadge.getStyleClass().addAll("badge", getStatusBadgeClass(project.getStatus()));
 
-        // Role badge
+        // Role badge — falls back to "MEMBER" if no role record found
         String role = ProjectMemberDAO.getUserRole(
                 project.getProjectId(),
                 Session.getCurrentUserId()
@@ -229,29 +267,37 @@ public class DashboardController {
     }
 
     /**
-     * Get the CSS class for a status badge
+     * Returns the CSS badge class for a given project status string.
+     *
+     * @param status The project status from the database
+     * @return The corresponding CSS class name for the status badge
      */
     private String getStatusBadgeClass(String status) {
         return switch (status.toLowerCase()) {
             case "not started" -> "badge-not-started";
             case "in progress" -> "badge-in-progress";
-            case "completed" -> "badge-completed";
-            case "published" -> "badge-published";
-            default -> "badge-not-started";
+            case "completed"   -> "badge-completed";
+            case "published"   -> "badge-published";
+            default            -> "badge-not-started";
         };
     }
 
     /**
-     * Handle viewing a project's details
+     * Stores the selected project in {@link SelectedProject} and navigates
+     * to the Project Details screen.
+     *
+     * @param project The project whose details should be displayed
      */
     private void handleViewProject(Project project) {
         SelectedProject.setProject(project);
         navigateTo("project-details.fxml", "Project Details", 1100, 700);
     }
 
-    // ─── NAVIGATION HANDLERS ───
+    // ─────────────────────────────────────────────────────────────────────────
+    // NAVIGATION
+    // ─────────────────────────────────────────────────────────────────────────
 
-
+    /** Already on Dashboard — refreshes the project list and stat cards */
     @FXML
     private void handleNavDashboard() {
         // Already on dashboard - refresh
@@ -259,22 +305,32 @@ public class DashboardController {
         loadStats();
     }
 
+    /** Navigates to the Browse Projects screen */
     @FXML
     private void handleNavBrowse() {
         navigateTo("browse-projects.fxml", "Browse Projects", 1100, 700);
     }
 
+    /** Navigates to the Create Project screen */
     @FXML
     private void handleCreateProject() {
         navigateTo("create-project.fxml", "Create Project", 1100, 700);
     }
 
+    /** Navigates to the Browse Projects screen (used for My Projects sidebar button) */
     @FXML
     private void handleNavMyProjects() {
         navigateTo("browse-projects.fxml", "My Projects", 1100, 700);
     }
 
-
+    /**
+     * Loads a new FXML screen and replaces the current scene on the active Stage.
+     *
+     * @param fxmlFile  Filename only e.g. {@code "dashboard.fxml"} — path is prepended automatically
+     * @param title     Window title shown in the title bar
+     * @param width     Scene width in pixels
+     * @param height    Scene height in pixels
+     */
     private void navigateTo(String fxmlFile, String title, int width, int height) {
         try {
             FXMLLoader loader = new FXMLLoader(
@@ -289,6 +345,11 @@ public class DashboardController {
         }
     }
 
+    /**
+     * Clears the active {@link Session} and navigates back to the Login screen.
+     * Note: uses inline FXMLLoader rather than navigateTo() as login uses a
+     * different scene size (600x500) and is a terminal navigation point.
+     */
     @FXML
     private void handleLogout() {
         // Clear session
@@ -309,7 +370,10 @@ public class DashboardController {
     }
 
     /**
-     * Helper to show an info alert
+     * Displays a standard JavaFX information alert with no header.
+     *
+     * @param title   Title shown in the alert window's title bar
+     * @param message Message body shown inside the alert dialog
      */
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);

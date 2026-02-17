@@ -20,40 +20,123 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * Controller responsible for managing the Project Details screen.
+ *
+ * <p>This controller:
+ * <ul>
+ *     <li>Displays detailed information about a selected project</li>
+ *     <li>Loads project members dynamically</li>
+ *     <li>Controls role-based UI visibility (Owner/Admin/Member)</li>
+ *     <li>Handles project updates (progress and status)</li>
+ *     <li>Handles leaving a project</li>
+ *     <li>Manages navigation between application screens</li>
+ * </ul>
+ *
+ * <p>Dependencies:
+ * <ul>
+ *     <li>{@link ProjectDAO} for project updates</li>
+ *     <li>{@link ProjectMemberDAO} for membership operations</li>
+ *     <li>{@link UserDAO} for retrieving user information</li>
+ *     <li>{@link Session} for current logged-in user</li>
+ *     <li>{@link SelectedProject} for active project state</li>
+ * </ul>
+ *
+ * <p>Follows the MVC pattern where:
+ * <ul>
+ *     <li>The View is defined in project-details.fxml</li>
+ *     <li>This class acts as the Controller</li>
+ *     <li>Project and User models represent application data</li>
+ * </ul>
+ */
 public class ProjectDetailsController {
 
-    // ─── SIDEBAR ───
+    // ───────────────── SIDEBAR COMPONENTS ─────────────────
+
+    /** Displays first letter of logged-in user's username */
     @FXML private Label avatarLabel;
+
+    /** Displays logged-in user's username */
     @FXML private Label sidebarUsername;
+
+    /** Displays logged-in user's email */
     @FXML private Label sidebarEmail;
 
-    // ─── TOP BAR ───
+    // ───────────────── TOP BAR COMPONENTS ─────────────────
+
+    /** Displays project title at top of page */
     @FXML private Label projectTitleLabel;
+
+    /** Displays project ID beneath the title */
     @FXML private Label projectSubLabel;
 
-    // ─── PROJECT INFO ───
+    // ───────────────── PROJECT INFORMATION ─────────────────
+
+    /** Displays project name */
     @FXML private Label projectNameLabel;
+
+    /** Displays project creator information */
     @FXML private Label ownerLabel;
+
+    /** Displays project status badge */
     @FXML private Label statusBadgeLabel;
+
+    /** Displays current user's role badge */
     @FXML private Label roleBadgeLabel;
+
+    /** Displays project description */
     @FXML private Label descriptionLabel;
+
+    /** Displays project creation date */
     @FXML private Label createdAtLabel;
+
+    /** Displays project progress percentage text */
     @FXML private Label progressPercentLabel;
+
+    /** Visual progress bar representing project completion */
     @FXML private ProgressBar detailProgressBar;
 
-    // ─── CONTROLS ───
+    // ───────────────── ROLE-BASED CONTROLS ─────────────────
+
+    /** Controls visible only to Owners/Admins */
     @FXML private VBox ownerControls;
+
+    /** Controls visible only to Members */
     @FXML private HBox memberControls;
+
+    /** Slider used to update project progress */
     @FXML private Slider updateProgressSlider;
+
+    /** Displays selected progress percentage */
     @FXML private Label updateProgressLabel;
+
+    /** Dropdown used to update project status */
     @FXML private ComboBox<String> updateStatusComboBox;
 
-    // ─── MEMBERS ───
+    // ───────────────── MEMBERS SECTION ─────────────────
+
+    /** Displays number of project members */
     @FXML private Label memberCountLabel;
+
+    /** Container that dynamically holds member rows */
     @FXML private VBox membersContainer;
 
+    /** Holds currently selected project */
     private Project currentProject;
 
+    /**
+     * Initializes the controller.
+     *
+     * <p>This method is automatically called by JavaFX
+     * after FXML fields are injected.
+     *
+     * <p>It loads:
+     * <ul>
+     *     <li>Logged-in user information</li>
+     *     <li>Selected project details</li>
+     *     <li>Update controls configuration</li>
+     * </ul>
+     */
     @FXML
     public void initialize() {
         loadUserInfo();
@@ -61,8 +144,19 @@ public class ProjectDetailsController {
         setupUpdateControls();
     }
 
+    /**
+     * Loads logged-in user information into sidebar.
+     *
+     * <p>Displays:
+     * <ul>
+     *     <li>Username</li>
+     *     <li>Email</li>
+     *     <li>Avatar initial</li>
+     * </ul>
+     */
     private void loadUserInfo() {
         if (Session.getCurrentUser() == null) return;
+
         sidebarUsername.setText(Session.getCurrentUser().getUsername());
         sidebarEmail.setText(Session.getCurrentUser().getEmail());
         avatarLabel.setText(
@@ -70,8 +164,23 @@ public class ProjectDetailsController {
         );
     }
 
+    /**
+     * Loads selected project details and updates UI components.
+     *
+     * <p>Includes:
+     * <ul>
+     *     <li>Project metadata</li>
+     *     <li>Status and role badges</li>
+     *     <li>Description</li>
+     *     <li>Progress information</li>
+     *     <li>Role-based control visibility</li>
+     *     <li>Project members list</li>
+     * </ul>
+     */
     private void loadProjectDetails() {
+
         currentProject = SelectedProject.getProject();
+
         if (currentProject == null) {
             projectTitleLabel.setText("No project selected");
             return;
@@ -80,40 +189,33 @@ public class ProjectDetailsController {
         int userId = Session.getCurrentUserId();
         int projectId = currentProject.getProjectId();
 
-        // Top bar
         projectTitleLabel.setText(currentProject.getProjectName());
         projectSubLabel.setText("Project ID: " + projectId);
 
-        // Project name and owner
         projectNameLabel.setText(currentProject.getProjectName());
+
         User owner = UserDAO.getUserById(currentProject.getCreatedBy());
         ownerLabel.setText("⊙  Created by: " + (owner != null ? owner.getUsername() : "Unknown"));
 
-        // Status badge
         statusBadgeLabel.setText(currentProject.getStatus().toUpperCase());
         statusBadgeLabel.getStyleClass().setAll("badge", getStatusBadgeClass(currentProject.getStatus()));
 
-        // Role badge
         String role = ProjectMemberDAO.getUserRole(projectId, userId);
         roleBadgeLabel.setText(role != null ? role.toUpperCase() : "MEMBER");
 
-        // Description
         String desc = currentProject.getProjectDescription();
         descriptionLabel.setText((desc != null && !desc.isEmpty()) ? desc : "No description provided.");
 
-        // Created at
         if (currentProject.getCreatedAt() != null) {
             createdAtLabel.setText(
                     currentProject.getCreatedAt().format(DateTimeFormatter.ofPattern("MMM dd, yyyy"))
             );
         }
 
-        // Progress
         int progress = currentProject.getProjectProgress();
         progressPercentLabel.setText(progress + "%");
         detailProgressBar.setProgress(progress / 100.0);
 
-        // Show controls based on role
         if ("Owner".equals(role) || "Admin".equals(role)) {
             ownerControls.setVisible(true);
             ownerControls.setManaged(true);
@@ -123,27 +225,40 @@ public class ProjectDetailsController {
             memberControls.setManaged(true);
         }
 
-        // Load members
         loadMembers(projectId);
     }
 
+    /**
+     * Configures update controls including:
+     * <ul>
+     *     <li>Progress slider listener</li>
+     *     <li>Status dropdown options</li>
+     * </ul>
+     */
     private void setupUpdateControls() {
-        // Progress slider listener
+
         updateProgressSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             updateProgressLabel.setText(newVal.intValue() + "%");
         });
 
-        // Status combo
         updateStatusComboBox.getItems().addAll(
                 "not started", "in progress", "completed", "published"
         );
+
         if (currentProject != null) {
             updateStatusComboBox.setValue(currentProject.getStatus());
         }
     }
 
+    /**
+     * Loads project members and dynamically generates UI rows.
+     *
+     * @param projectId ID of the project
+     */
     private void loadMembers(int projectId) {
+
         List<ProjectMember> members = ProjectMemberDAO.getMembersByProject(projectId);
+
         membersContainer.getChildren().clear();
         memberCountLabel.setText(members.size() + " member(s)");
 
@@ -156,21 +271,29 @@ public class ProjectDetailsController {
         }
     }
 
+    /**
+     * Creates a styled UI row representing a project member.
+     *
+     * @param user The member user
+     * @param role The member role in the project
+     * @return HBox representing the member row
+     */
     private HBox createMemberRow(User user, String role) {
+
         HBox row = new HBox(14);
         row.getStyleClass().add("member-row");
         row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
-        // Avatar
         StackPane avatar = new StackPane();
         avatar.getStyleClass().add("member-avatar");
+
         Label avatarLetter = new Label(
                 String.valueOf(user.getUsername().charAt(0)).toUpperCase()
         );
         avatarLetter.getStyleClass().add("member-avatar-letter");
+
         avatar.getChildren().add(avatarLetter);
 
-        // User info
         VBox userInfo = new VBox(3);
         HBox.setHgrow(userInfo, Priority.ALWAYS);
 
@@ -182,11 +305,9 @@ public class ProjectDetailsController {
 
         userInfo.getChildren().addAll(nameLabel, emailLabel);
 
-        // Role badge
         Label roleBadge = new Label(role.toUpperCase());
         roleBadge.getStyleClass().add("role-badge");
 
-        // Joined at indicator for current user
         if (user.getUserId() == Session.getCurrentUserId()) {
             Label youLabel = new Label("(You)");
             youLabel.setStyle("-fx-text-fill: #4fc3f7; -fx-font-size: 11px;");
@@ -198,8 +319,14 @@ public class ProjectDetailsController {
         return row;
     }
 
+    /**
+     * Handles updating project progress.
+     *
+     * Updates database and refreshes UI upon success.
+     */
     @FXML
     private void handleUpdateProgress() {
+
         if (currentProject == null) return;
 
         int newProgress = (int) updateProgressSlider.getValue();
@@ -215,8 +342,12 @@ public class ProjectDetailsController {
         }
     }
 
+    /**
+     * Handles updating project status.
+     */
     @FXML
     private void handleUpdateStatus() {
+
         if (currentProject == null) return;
 
         String newStatus = updateStatusComboBox.getValue();
@@ -234,8 +365,12 @@ public class ProjectDetailsController {
         }
     }
 
+    /**
+     * Handles leaving a project after confirmation.
+     */
     @FXML
     private void handleLeaveProject() {
+
         if (currentProject == null) return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
@@ -245,6 +380,7 @@ public class ProjectDetailsController {
 
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
+
                 boolean removed = ProjectMemberDAO.removeMember(
                         currentProject.getProjectId(),
                         Session.getCurrentUserId()
@@ -261,6 +397,12 @@ public class ProjectDetailsController {
         });
     }
 
+    /**
+     * Returns CSS badge class based on project status.
+     *
+     * @param status project status
+     * @return CSS class name
+     */
     private String getStatusBadgeClass(String status) {
         return switch (status.toLowerCase()) {
             case "not started" -> "badge-not-started";
@@ -271,13 +413,18 @@ public class ProjectDetailsController {
         };
     }
 
-    // ─── NAVIGATION ───
+    // ───────────────── NAVIGATION METHODS ─────────────────
 
     @FXML private void handleNavDashboard() { navigateTo("dashboard.fxml", "Dashboard", 1100, 700); }
     @FXML private void handleNavMyProjects() { navigateTo("browse-projects.fxml", "Browse", 1100, 700); }
     @FXML private void handleNavBrowse() { navigateTo("browse-projects.fxml", "Browse Projects", 1100, 700); }
     @FXML private void handleCreateProject() { navigateTo("create-project.fxml", "Create Project", 1100, 700); }
 
+    /**
+     * Handles user logout.
+     *
+     * Clears session and selected project, then redirects to login screen.
+     */
     @FXML
     private void handleLogout() {
         Session.clearSession();
@@ -285,6 +432,14 @@ public class ProjectDetailsController {
         navigateTo("login.fxml", "Login", 600, 500);
     }
 
+    /**
+     * Loads a new FXML scene and replaces current stage scene.
+     *
+     * @param fxmlFile FXML file name
+     * @param title Window title
+     * @param width Scene width
+     * @param height Scene height
+     */
     private void navigateTo(String fxmlFile, String title, int width, int height) {
         try {
             FXMLLoader loader = new FXMLLoader(
@@ -299,6 +454,12 @@ public class ProjectDetailsController {
         }
     }
 
+    /**
+     * Displays an informational alert dialog.
+     *
+     * @param title Alert title
+     * @param message Alert message
+     */
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);

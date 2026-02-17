@@ -5,13 +5,23 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+/**
+ * Handles SQLite database connection and initial table setup.
+ *
+ * Provides a shared connection and ensures required tables exist
+ * when the application starts.
+ */
 public class DatabaseManager {
 
+    // SQLite database file location
     private static final String DATABASE_URL = "jdbc:sqlite:data/projectmanager.db";
+
+    // Shared connection instance
     private static Connection connection;
 
     /**
-     * Get database connection (creates database file if it doesn't exist)
+     * Returns an active database connection.
+     * Creates a new connection if none exists or if it was closed.
      */
     public static Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
@@ -21,14 +31,16 @@ public class DatabaseManager {
     }
 
     /**
-     * Initialize database - create tables if they don't exist
+     * Creates application tables if they do not already exist.
+     * Should be called once during application startup.
      */
     public static void initializeDatabase() {
+
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
-            // Create users table
-            String createUsersTable = """
+            // Users table
+            stmt.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT UNIQUE NOT NULL,
@@ -36,11 +48,10 @@ public class DatabaseManager {
                     password TEXT NOT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
-            """;
-            stmt.execute(createUsersTable);
+            """);
 
-            // Create projects table
-            String createProjectsTable = """
+            // Projects table
+            stmt.execute("""
                 CREATE TABLE IF NOT EXISTS projects (
                     project_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     project_name TEXT NOT NULL,
@@ -48,14 +59,14 @@ public class DatabaseManager {
                     project_progress INTEGER DEFAULT 0,
                     created_by INTEGER NOT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    status TEXT DEFAULT 'not started' CHECK(status IN ('not started', 'in progress', 'completed', 'published')),
+                    status TEXT DEFAULT 'not started'
+                        CHECK(status IN ('not started', 'in progress', 'completed', 'published')),
                     FOREIGN KEY (created_by) REFERENCES users(user_id)
                 )
-            """;
-            stmt.execute(createProjectsTable);
+            """);
 
-            // Create project_members table
-            String createProjectMembersTable = """
+            // Project members (many-to-many relationship)
+            stmt.execute("""
                 CREATE TABLE IF NOT EXISTS project_members (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     project_id INTEGER NOT NULL,
@@ -66,19 +77,19 @@ public class DatabaseManager {
                     FOREIGN KEY (user_id) REFERENCES users(user_id),
                     UNIQUE(project_id, user_id)
                 )
-            """;
-            stmt.execute(createProjectMembersTable);
+            """);
 
-            System.out.println("Database initialized successfully!");
+            System.out.println("Database initialized successfully.");
 
         } catch (SQLException e) {
-            System.err.println("Error initializing database: " + e.getMessage());
+            System.err.println("Database initialization failed: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * Close database connection
+     * Closes the database connection if it is open.
+     * Should be called on application shutdown.
      */
     public static void closeConnection() {
         try {
@@ -87,7 +98,7 @@ public class DatabaseManager {
                 System.out.println("Database connection closed.");
             }
         } catch (SQLException e) {
-            System.err.println("Error closing connection: " + e.getMessage());
+            System.err.println("Error closing database connection: " + e.getMessage());
         }
     }
 }
